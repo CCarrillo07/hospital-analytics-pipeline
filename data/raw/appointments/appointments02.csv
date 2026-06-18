@@ -1,0 +1,67 @@
+appointment_id,patient_id,doctor_id,appointment_date,appointment_time,reason_for_visit,status
+A067,P043,D001,2023-08-10,11:00 am,Follow-up,Scheduled
+A068,P037,D005,2023-03-14,3:00 PM,Checkup,Scheduled
+A069,P012,D004,2023-03-29,15:30:00,Therapy,Cancelled
+A070,P003,D003,2023-08-26,5:00 PM,Follow-up,Scheduled
+A071,P001,D006,2023-01-26,5:00 PM,Follow-up,Scheduled
+A072,P033,D002,2023-06-12,13:30:00,Checkup,Scheduled
+A073,P040,D003,2023-12-24,3:00 PM,Follow-up,Completed
+A074,P010,D005,2023-07-23,13:30:00,Therapy,No-show
+A075,P043,D009,2023-05-08,2:00 PM,Follow-up,Cancelled
+A076,P044,D002,2023-11-27,12:00 PM,Therapy,Cancelled
+A077,P029,D010,2023-12-14,5:15 pm,Checkup,Completed
+A078,P013,D008,2023-09-17,11:15 am,Consultation,No-show
+A079,P012,D002,2023-12-26,14:00:00,Follow-up,Cancelled
+A080,P031,D005,2023-06-26,8:30:00,Consultation,Scheduled
+A081,P046,D007,2023-01-06,13:30:00,Therapy,Cancelled
+A082,P002,D008,2023-01-20,10:45 am,Follow-up,Scheduled
+A083,P050,D001,2023-11-07,12:30:00,Emergency,Completed
+A084,P035,D006,2023-05-31,16:00:00,Consultation,Scheduled
+A085,P023,D001,2023-02-18,4:15 pm,Follow-up,Cancelled
+A086,P017,D002,2023-10-29,11:00 AM,Consultation,Cancelled
+A087,P026,D001,2023-10-19,12:15:00,Follow-up,Cancelled
+A088,P008,D005,2023-05-02,4:30 pm,Checkup,Completed
+A089,P029,D010,2023-02-14,11:00 am,Consultation,Completed
+A090,P026,D009,2023-06-01,17:30:00,Emergency,No-show
+A091,P010,D006,2023-06-11,1:15 pm,Emergency,Cancelled
+A092,P026,D001,2023-01-30,2:15 PM,Therapy,Scheduled
+A093,P034,D001,2023-04-09,9:30 am,Follow-up,Completed
+A094,P041,D002,2023-04-08,8:45:00,Consultation,Cancelled
+A095,P007,D009,2023-05-09,10:15:00,Therapy,Cancelled
+A096,P004,D003,2023-07-07,3:00 PM,Consultation,Completed
+A097,P050,D001,2023-05-06,2:45 pm,Follow-up,No-show
+A098,P045,D005,2023-03-17,1:00 PM,Emergency,Completed
+A099,P011,D007,2023-07-04,3:00 pm,Checkup,Completed
+A100,P029,D006,2023-03-02,8:00 AM,Emergency,Scheduled
+A101,P036,D001,2023-09-21,1:15 PM,Therapy,Scheduled
+A102,P025,D005,2023-10-25,9:00:00,Checkup,No-show
+A103,P021,D005,2023-01-24,8:30 am,Therapy,Cancelled
+A104,P036,D006,2023-04-18,8:45:00,Follow-up,Completed
+A105,P010,D003,2023-08-14,4:00 pm,Checkup,No-show
+A106,P037,D005,2023-10-29,11:15:00,Therapy,Scheduled
+A107,P009,D007,2023-04-17,1:45 pm,Follow-up,Completed
+A108,P024,D005,2023-04-21,15:00:00,Emergency,Cancelled
+A109,P035,D005,2023-07-29,14:00:00,Follow-up,Scheduled
+A110,P049,D005,2023-07-19,2:30 pm,Consultation,Scheduled
+A111,P035,D010,2023-05-22,3:30 pm,Follow-up,Scheduled
+A112,P048,D010,2023-01-11,8:00 AM,Follow-up,No-show
+A113,P036,D003,2023-11-24,15:30:00,Consultation,Cancelled
+A114,P018,D001,2023-08-08,9:00:00,Therapy,Completed
+A115,P049,D005,2023-10-25,10:30 am,Therapy,No-show
+A116,P039,D009,2023-07-07,9:15 AM,Follow-up,No-show
+A117,P032,D001,2023-06-20,1:45 pm,Consultation,No-show
+A118,P024,D003,2023-08-09,8:15 am,Consultation,Scheduled
+A119,P023,D004,2023-12-18,1:30 pm,Emergency,Cancelled
+A120,P032,D001,2023-12-08,11:00:00,Therapy,No-show
+A121,P037,D001,2023-04-07,3:00 PM,Checkup,Completed
+A122,P012,D008,2023-07-11,2:30 pm,Therapy,Cancelled
+A123,P049,D002,2023-02-28,10:45:00,Therapy,Completed
+A124,P013,D008,2023-03-16,17:15:00,Emergency,Cancelled
+A125,P023,D007,2023-02-18,10:15:00,Checkup,Completed
+A126,P025,D010,2023-11-02,9:45:00,Emergency,Scheduled
+A127,P035,D010,2023-11-13,8:30:00,Checkup,No-show
+A128,P041,D002,2023-04-15,2:45 pm,Follow-up,Completed
+A129,P030,D006,2023-08-25,9:30 am,Checkup,Cancelled
+A130,P017,D006,2023-02-23,3:00 pm,Emergency,No-show
+A131,P049,D003,2023-05-11,16:30:00,Therapy,No-show
+A132,P020,D002,2023-07-26,10:45 AM,Checkup,Cancelled
