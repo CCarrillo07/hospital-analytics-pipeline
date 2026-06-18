@@ -18,6 +18,7 @@ harmonized schema
 analytics schema
    ↓
 Streamlit dashboard
+```
 
 The project includes:
 
