@@ -102,8 +102,7 @@ BEGIN
         registration_date,
         insurance_provider,
         insurance_number,
-        email,
-        source_file
+        email
     )
     SELECT
         patient_id,
@@ -122,12 +121,12 @@ BEGIN
         TO_DATE(registration_date, 'DD/MM/YYYY') AS registration_date,
         insurance_provider,
         insurance_number,
-        LOWER(TRIM(email)) AS email,
-        source_file
+        LOWER(TRIM(email)) AS email
     FROM raw.patients
     WHERE patient_id IS NOT NULL;
 END;
 $$;
+
 
 -- ============================================================
 -- Transformation procedure: Doctors
@@ -147,8 +146,7 @@ BEGIN
         phone_number,
         years_experience,
         hospital_branch,
-        email,
-        source_file
+        email
     )
     SELECT
         doctor_id,
@@ -158,12 +156,12 @@ BEGIN
         REGEXP_REPLACE(phone_number, '[^0-9]', '', 'g') AS phone_number,
         NULLIF(years_experience, '')::INTEGER AS years_experience,
         hospital_branch,
-        LOWER(TRIM(email)) AS email,
-        source_file
+        LOWER(TRIM(email)) AS email
     FROM raw.doctors
     WHERE doctor_id IS NOT NULL;
 END;
 $$;
+
 
 -- ============================================================
 -- Transformation procedure: Appointments
@@ -182,8 +180,7 @@ BEGIN
         appointment_date,
         appointment_time,
         reason_for_visit,
-        status,
-        source_file
+        status
     )
     SELECT
         appointment_id,
@@ -197,12 +194,12 @@ BEGIN
             ELSE appointment_time::TIME
         END AS appointment_time,
         reason_for_visit,
-        INITCAP(TRIM(status)) AS status,
-        source_file
+        INITCAP(TRIM(status)) AS status
     FROM raw.appointments
     WHERE appointment_id IS NOT NULL;
 END;
 $$;
+
 
 -- ============================================================
 -- Transformation procedure: Treatments
@@ -219,20 +216,19 @@ BEGIN
         appointment_id,
         treatment_type,
         description,
-        treatment_date,
-        source_file
+        treatment_date
     )
     SELECT
         treatment_id,
         appointment_id,
         INITCAP(TRIM(treatment_type)) AS treatment_type,
         description,
-        TO_DATE(treatment_date, 'DD/MM/YYYY') AS treatment_date,
-        source_file
+        TO_DATE(treatment_date, 'DD/MM/YYYY') AS treatment_date
     FROM raw.treatments
     WHERE treatment_id IS NOT NULL;
 END;
 $$;
+
 
 -- ============================================================
 -- Transformation procedure: Billing
@@ -251,8 +247,7 @@ BEGIN
         bill_date,
         amount,
         payment_method,
-        payment_status,
-        source_file
+        payment_status
     )
     SELECT
         bill_id,
@@ -269,12 +264,12 @@ BEGIN
                 THEN 'Cash'
             ELSE 'Unknown'
         END AS payment_method,
-        INITCAP(TRIM(payment_status)) AS payment_status,
-        source_file
+        INITCAP(TRIM(payment_status)) AS payment_status
     FROM raw.billing
     WHERE bill_id IS NOT NULL;
 END;
 $$;
+
 
 -- ============================================================
 -- Master procedure
@@ -304,7 +299,7 @@ SELECT COUNT(*) FROM harmonized.treatments;
 SELECT COUNT(*) FROM harmonized.billing;
 
 -- Run all transformations:
---CALL automation.sp_transform_all();
+CALL automation.sp_transform_all();
 
 -- After running stored procedures
 SELECT COUNT(*) FROM harmonized.patients;
