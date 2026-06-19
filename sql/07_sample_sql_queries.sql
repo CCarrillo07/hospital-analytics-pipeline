@@ -4,7 +4,6 @@ select
 FROM harmonized.doctors 
 GROUP BY specialization;
 
-
 select 
 	a.status, 
 	count(a.status) 
@@ -16,7 +15,6 @@ select
 	count(p.insurance_provider)
 from harmonized.patients p
 group by insurance_provider;
-
 
 select 
 	t.treatment_type, 
