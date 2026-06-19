@@ -56,5 +56,5 @@ def get_sql_database() -> SQLDatabase:
         get_ai_database_url(),
         schema=ALLOWED_SCHEMA,
         include_tables=ALLOWED_TABLES,
-        sample_rows_in_table_info=3
+        sample_rows_in_table_info=0
     )
