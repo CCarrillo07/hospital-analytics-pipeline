@@ -43,12 +43,6 @@ st.set_page_config(
 st.title("Hospital DB AI Agent")
 st.caption("Ask natural language questions about the harmonized hospital data.")
 
-st.info(
-    "This agent uses a local Ollama model and queries the PostgreSQL "
-    "`harmonized` schema."
-)
-
-
 with st.form("question_form"):
     question = st.text_input(
         "Ask a question",

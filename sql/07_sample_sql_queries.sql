@@ -22,3 +22,12 @@ select
 from harmonized.treatments t
 join harmonized.billing b on t.treatment_id  = b.treatment_id 
 group by t.treatment_type;
+
+select
+p.first_name || ' ' ||  p.last_name as patient_name,
+sum(amount) as total_bill
+from harmonized.billing b
+join harmonized.patients p on p.patient_id = b.patient_id
+group by p.patient_id, patient_name
+order by total_bill desc
+limit 1;

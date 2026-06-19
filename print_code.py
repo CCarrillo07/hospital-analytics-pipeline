@@ -4,7 +4,7 @@ import os
 root_dir = '.'  # current directory, change if needed
 
 # File extensions to include
-extensions = ('.py', '.env')
+extensions = ('.py', '.env', '.sql')
 
 # Files to exclude
 excluded_files = {'print_code.py', 'all_code_output.txt', 'app.log'}

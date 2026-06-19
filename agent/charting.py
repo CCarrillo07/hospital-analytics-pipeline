@@ -13,7 +13,31 @@ from sqlalchemy import text
 from agent.llm import get_llm
 from agent.database import get_engine
 from agent.safety import clean_sql_response, is_safe_select_query
-from agent.config import ALLOWED_SCHEMA, ALLOWED_TABLES
+from agent.config import (
+    AI_DB_DIALECT_NAME,
+    ALLOWED_SCHEMA,
+    ALLOWED_TABLES,
+)
+
+
+def get_allowed_tables_text() -> str:
+    """
+    Return a human-readable description of the tables available to the chart SQL generator.
+
+    If ALLOWED_TABLES has values, the prompt lists those specific tables.
+    If ALLOWED_TABLES is empty, the prompt tells the model that all tables
+    in the configured schema are available.
+    """
+
+    if ALLOWED_TABLES:
+        return ", ".join(
+            [
+                f"{ALLOWED_SCHEMA}.{table}"
+                for table in ALLOWED_TABLES
+            ]
+        )
+
+    return f"All tables available in the {ALLOWED_SCHEMA} schema"
 
 
 def generate_chart_sql(question: str) -> str:
@@ -23,8 +47,10 @@ def generate_chart_sql(question: str) -> str:
 
     llm = get_llm()
 
+    allowed_tables_text = get_allowed_tables_text()
+
     prompt = f"""
-You are a PostgreSQL expert.
+You are a {AI_DB_DIALECT_NAME} expert.
 
 Create one safe SELECT query for this user question:
 
@@ -34,20 +60,23 @@ Allowed schema:
 {ALLOWED_SCHEMA}
 
 Allowed tables:
-{", ".join([f"{ALLOWED_SCHEMA}.{table}" for table in ALLOWED_TABLES])}
+{allowed_tables_text}
 
 Rules:
 - Return only SQL.
 - Do not use markdown.
 - Only use SELECT.
-- Always use full table names with the schema prefix, for example {ALLOWED_SCHEMA}.appointments.
+- Generate SQL using {AI_DB_DIALECT_NAME} syntax.
+- Always use full table names with the schema prefix, for example {ALLOWED_SCHEMA}.table_name.
 - Only query tables in the {ALLOWED_SCHEMA} schema.
-- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, or CALL.
+- Do not query raw tables.
+- Do not query automation tables.
+- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, or CALL.
 - Use clear column aliases.
 - For charts, return two columns when possible:
   1. A category or date column
   2. A numeric metric column
-- Limit the result to 50 rows maximum.
+- Limit the result to 50 rows maximum using the correct row-limiting syntax for {AI_DB_DIALECT_NAME}.
 """
 
     response = llm.invoke(prompt)
