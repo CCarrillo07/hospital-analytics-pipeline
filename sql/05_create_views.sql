@@ -4,9 +4,6 @@
 
 -- Purpose:
 -- This view summarizes the number of appointments by appointment status.
---
--- This is the only analytics view provided by the instructor.
--- Students should create additional analytics views as part of their project.
 CREATE OR REPLACE VIEW analytics.vw_appointments_by_status AS
 SELECT
     status,
