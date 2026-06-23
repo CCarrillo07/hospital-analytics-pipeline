@@ -1,5 +1,9 @@
 """
-Configuration for the Hospital DB AI Agent.
+Configuration for the Hospital DB AI Assistant.
+
+This project is currently PostgreSQL-specific.
+
+The values are loaded from the .env file located at the project root.
 """
 
 from pathlib import Path
@@ -41,15 +45,13 @@ def parse_csv_env(value: str | None, default: list[str]) -> list[str]:
 # Ollama configuration
 # ============================================================
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral-nemo")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:14b")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 
 # ============================================================
-# AI database configuration
+# AI PostgreSQL database configuration
 # ============================================================
-
-AI_DB_TYPE = os.getenv("AI_DB_TYPE", "postgresql")
 
 AI_DB_DIALECT = os.getenv(
     "AI_DB_DIALECT",
@@ -66,11 +68,6 @@ AI_DB_PORT = os.getenv("AI_DB_PORT", "5432")
 AI_DB_NAME = os.getenv("AI_DB_NAME")
 AI_DB_USER = os.getenv("AI_DB_USER")
 AI_DB_PASSWORD = os.getenv("AI_DB_PASSWORD")
-
-# Mainly used by SQL Server with pyodbc.
-AI_DB_DRIVER = os.getenv("AI_DB_DRIVER")
-AI_DB_ENCRYPT = os.getenv("AI_DB_ENCRYPT")
-AI_DB_TRUST_SERVER_CERTIFICATE = os.getenv("AI_DB_TRUST_SERVER_CERTIFICATE")
 
 
 # ============================================================
