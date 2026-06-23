@@ -1,9 +1,15 @@
 """
 Configuration for the Hospital DB AI Assistant.
 
-This project is currently PostgreSQL-specific.
+This file supports multiple AI query database engines:
 
-The values are loaded from the .env file located at the project root.
+- PostgreSQL
+- Oracle
+- SQL Server
+
+Important:
+The ETL pipeline can still remain PostgreSQL-specific.
+This configuration is for the AI Database Assistant query layer.
 """
 
 from pathlib import Path
@@ -50,8 +56,10 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 
 # ============================================================
-# AI PostgreSQL database configuration
+# AI database routing
 # ============================================================
+
+AI_DB_TYPE = os.getenv("AI_DB_TYPE", "postgresql").strip().lower()
 
 AI_DB_DIALECT = os.getenv(
     "AI_DB_DIALECT",
@@ -63,11 +71,25 @@ AI_DB_DIALECT_NAME = os.getenv(
     "PostgreSQL"
 )
 
+
+# ============================================================
+# AI database connection
+# ============================================================
+
 AI_DB_HOST = os.getenv("AI_DB_HOST", "localhost")
 AI_DB_PORT = os.getenv("AI_DB_PORT", "5432")
 AI_DB_NAME = os.getenv("AI_DB_NAME")
 AI_DB_USER = os.getenv("AI_DB_USER")
 AI_DB_PASSWORD = os.getenv("AI_DB_PASSWORD")
+
+
+# ============================================================
+# Optional SQL Server connection settings
+# ============================================================
+
+AI_DB_DRIVER = os.getenv("AI_DB_DRIVER")
+AI_DB_ENCRYPT = os.getenv("AI_DB_ENCRYPT")
+AI_DB_TRUST_SERVER_CERTIFICATE = os.getenv("AI_DB_TRUST_SERVER_CERTIFICATE")
 
 
 # ============================================================

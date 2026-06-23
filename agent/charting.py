@@ -1,9 +1,13 @@
 """
-Chart generation helper for the DB AI Agent.
+Chart generation helper for the DB AI Assistant.
 
-The SQL agent is good for natural language answers.
 For charts, we separately ask the LLM to generate a chart-friendly SELECT query,
 then we run that query and display the result with Plotly.
+
+Supported AI query databases:
+- PostgreSQL
+- Oracle
+- SQL Server
 """
 
 import pandas as pd
@@ -14,30 +18,46 @@ from agent.llm import get_llm
 from agent.database import get_engine
 from agent.safety import clean_sql_response, is_safe_select_query
 from agent.config import (
+    AI_DB_TYPE,
     AI_DB_DIALECT_NAME,
     ALLOWED_SCHEMA,
     ALLOWED_TABLES,
 )
+from agent.sql_dialects import get_dialect_config
+
+
+DIALECT_CONFIG = get_dialect_config(
+    db_type=AI_DB_TYPE,
+    display_name=AI_DB_DIALECT_NAME,
+)
+
+
+def table_ref(table_name: str) -> str:
+    """
+    Build a schema-qualified table reference for the active dialect.
+    """
+
+    return DIALECT_CONFIG.format_table_reference(
+        ALLOWED_SCHEMA,
+        table_name,
+    )
 
 
 def get_allowed_tables_text() -> str:
     """
     Return a human-readable description of the tables available to the chart SQL generator.
-
-    If ALLOWED_TABLES has values, the prompt lists those specific tables.
-    If ALLOWED_TABLES is empty, the prompt tells the model that all tables
-    in the configured schema are available.
     """
 
     if ALLOWED_TABLES:
         return ", ".join(
-            [
-                f"{ALLOWED_SCHEMA}.{table}"
-                for table in ALLOWED_TABLES
-            ]
+            table_ref(table)
+            for table in ALLOWED_TABLES
         )
 
-    return f"All tables available in the {ALLOWED_SCHEMA} schema"
+    return (
+        f"All tables available in the "
+        f"{DIALECT_CONFIG.format_schema_name(ALLOWED_SCHEMA)} schema"
+    )
 
 
 def generate_chart_sql(question: str) -> str:
@@ -50,14 +70,14 @@ def generate_chart_sql(question: str) -> str:
     allowed_tables_text = get_allowed_tables_text()
 
     prompt = f"""
-You are a {AI_DB_DIALECT_NAME} expert.
+You are a {DIALECT_CONFIG.display_name} expert.
 
 Create one safe SELECT query for this user question:
 
 {question}
 
 Allowed schema:
-{ALLOWED_SCHEMA}
+{DIALECT_CONFIG.format_schema_name(ALLOWED_SCHEMA)}
 
 Allowed tables:
 {allowed_tables_text}
@@ -66,17 +86,21 @@ Rules:
 - Return only SQL.
 - Do not use markdown.
 - Only use SELECT.
-- Generate SQL using {AI_DB_DIALECT_NAME} syntax.
-- Always use full table names with the schema prefix, for example {ALLOWED_SCHEMA}.table_name.
-- Only query tables in the {ALLOWED_SCHEMA} schema.
+- Generate SQL using {DIALECT_CONFIG.display_name} syntax.
+- Always use full table names with the schema prefix, for example {DIALECT_CONFIG.table_reference_example}.
+- Only query tables in the configured allowed schema.
 - Do not query raw tables.
 - Do not query automation tables.
-- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, or CALL.
+- Do not query analytics tables.
+- Do not query system, catalog, or metadata tables.
+- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, CALL, COPY, GRANT, REVOKE, DECLARE, BEGIN, COMMIT, or ROLLBACK.
 - Use clear column aliases.
 - For charts, return two columns when possible:
   1. A category or date column
   2. A numeric metric column
-- Limit the result to 50 rows maximum using the correct row-limiting syntax for {AI_DB_DIALECT_NAME}.
+- Limit the result to 50 rows maximum.
+- {DIALECT_CONFIG.row_limit_instruction}
+- {DIALECT_CONFIG.concat_instruction}
 """
 
     response = llm.invoke(prompt)
