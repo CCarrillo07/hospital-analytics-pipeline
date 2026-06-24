@@ -1,9 +1,12 @@
 """
-Chart generation helper for the DB AI Agent.
+Chart generation helper for the DB AI Assistant.
 
-The SQL agent is good for natural language answers.
 For charts, we separately ask the LLM to generate a chart-friendly SELECT query,
 then we run that query and display the result with Plotly.
+
+This file is domain-generic.
+Project-specific context should come from environment variables, not hardcoded
+hospital, retail, or banking logic.
 """
 
 import pandas as pd
@@ -17,6 +20,9 @@ from agent.config import (
     AI_DB_DIALECT_NAME,
     ALLOWED_SCHEMA,
     ALLOWED_TABLES,
+    EXCLUDED_SCHEMAS,
+    AI_DB_RELATIONSHIPS,
+    AI_DB_BUSINESS_RULES,
 )
 
 
@@ -31,13 +37,67 @@ def get_allowed_tables_text() -> str:
 
     if ALLOWED_TABLES:
         return ", ".join(
-            [
-                f"{ALLOWED_SCHEMA}.{table}"
-                for table in ALLOWED_TABLES
-            ]
+            f"{ALLOWED_SCHEMA}.{table}"
+            for table in ALLOWED_TABLES
         )
 
     return f"All tables available in the {ALLOWED_SCHEMA} schema"
+
+
+def get_excluded_schemas_text() -> str:
+    """
+    Return a human-readable description of schemas the assistant should avoid.
+    """
+
+    if not EXCLUDED_SCHEMAS:
+        return "No additional schemas are excluded."
+
+    return ", ".join(EXCLUDED_SCHEMAS)
+
+
+def format_semicolon_list(value: str) -> str:
+    """
+    Convert a semicolon-separated string into a bullet list.
+    """
+
+    items = [
+        item.strip()
+        for item in value.split(";")
+        if item.strip()
+    ]
+
+    return "\n".join(
+        f"- {item}"
+        for item in items
+    )
+
+
+def get_optional_domain_guidance_text() -> str:
+    """
+    Return optional database-specific guidance from environment variables.
+    """
+
+    sections = []
+
+    if AI_DB_RELATIONSHIPS:
+        sections.append(
+            "Known relationships:\n"
+            f"{format_semicolon_list(AI_DB_RELATIONSHIPS)}"
+        )
+
+    if AI_DB_BUSINESS_RULES:
+        sections.append(
+            "Business rules:\n"
+            f"{format_semicolon_list(AI_DB_BUSINESS_RULES)}"
+        )
+
+    if not sections:
+        return (
+            "No additional business rules or relationships were provided. "
+            "Use only the available schema and columns."
+        )
+
+    return "\n\n".join(sections)
 
 
 def generate_chart_sql(question: str) -> str:
@@ -48,6 +108,8 @@ def generate_chart_sql(question: str) -> str:
     llm = get_llm()
 
     allowed_tables_text = get_allowed_tables_text()
+    excluded_schemas_text = get_excluded_schemas_text()
+    domain_guidance_text = get_optional_domain_guidance_text()
 
     prompt = f"""
 You are a {AI_DB_DIALECT_NAME} expert.
@@ -62,21 +124,29 @@ Allowed schema:
 Allowed tables:
 {allowed_tables_text}
 
+Excluded schemas:
+{excluded_schemas_text}
+
+Optional domain guidance:
+{domain_guidance_text}
+
 Rules:
 - Return only SQL.
 - Do not use markdown.
 - Only use SELECT.
 - Generate SQL using {AI_DB_DIALECT_NAME} syntax.
 - Always use full table names with the schema prefix, for example {ALLOWED_SCHEMA}.table_name.
-- Only query tables in the {ALLOWED_SCHEMA} schema.
-- Do not query raw tables.
-- Do not query automation tables.
-- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, or CALL.
+- Only query tables in the allowed schema: {ALLOWED_SCHEMA}.
+- Do not query excluded schemas.
+- Do not query system, catalog, or metadata tables.
+- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, CALL, COPY, GRANT, REVOKE, DECLARE, BEGIN, COMMIT, or ROLLBACK.
 - Use clear column aliases.
 - For charts, return two columns when possible:
-  1. A category or date column
+  1. A category, label, or date column
   2. A numeric metric column
 - Limit the result to 50 rows maximum using the correct row-limiting syntax for {AI_DB_DIALECT_NAME}.
+- Do not assume specific column names exist.
+- Do not invent relationships. Use explicit relationships from the optional guidance when provided.
 """
 
     response = llm.invoke(prompt)
@@ -123,12 +193,12 @@ def create_chart(df: pd.DataFrame):
         x=x_column,
         y=y_column,
         text=y_column,
-        title=f"{y_column.replace('_', ' ').title()} by {x_column.replace('_', ' ').title()}"
+        title=f"{y_column.replace('_', ' ').title()} by {x_column.replace('_', ' ').title()}",
     )
 
     fig.update_layout(
         xaxis_title=x_column.replace("_", " ").title(),
-        yaxis_title=y_column.replace("_", " ").title()
+        yaxis_title=y_column.replace("_", " ").title(),
     )
 
     return fig

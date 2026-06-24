@@ -1,8 +1,7 @@
 """
 Controlled SQL pipeline entry point.
 
-This module replaces the autonomous LangChain SQL Agent flow with a
-more deterministic pipeline:
+This module uses a deterministic pipeline:
 
 1. Read database schema context.
 2. Ask the LLM to generate one SQL SELECT query.
@@ -11,8 +10,9 @@ more deterministic pipeline:
 5. Ask the LLM to summarize the real SQL result.
 6. Validate the final answer.
 
-This approach is more reliable for smaller local models because Python
-controls execution instead of relying on the model to decide when to use tools.
+The code is intentionally domain-generic.
+Project-specific guidance such as relationships or business rules should come
+from environment variables, not hardcoded hospital, retail, or banking logic.
 """
 
 import logging
@@ -26,6 +26,9 @@ from agent.config import (
     AI_DB_DIALECT_NAME,
     ALLOWED_SCHEMA,
     ALLOWED_TABLES,
+    EXCLUDED_SCHEMAS,
+    AI_DB_RELATIONSHIPS,
+    AI_DB_BUSINESS_RULES,
 )
 from agent.database import get_engine
 from agent.llm import get_llm
@@ -48,6 +51,8 @@ def ask_database(question: str) -> str:
     """
 
     logger.info("User question: %s", question)
+    logger.info("AI database dialect: %s", AI_DB_DIALECT_NAME)
+    logger.info("Allowed schema: %s", ALLOWED_SCHEMA)
 
     schema_context = get_schema_context()
 
@@ -61,7 +66,7 @@ def ask_database(question: str) -> str:
     if sql_query == "NO_SQL":
         return (
             "I could not create a safe SQL query for that question using the "
-            "available harmonized tables."
+            "available tables."
         )
 
     if not is_safe_select_query(sql_query):
@@ -79,8 +84,7 @@ def ask_database(question: str) -> str:
         if sql_query == "NO_SQL" or not is_safe_select_query(sql_query):
             return (
                 "I could not generate a safe SQL query for that question. "
-                "Please rephrase the question or ask about the available "
-                "harmonized tables."
+                "Please rephrase the question or ask about the available tables."
             )
 
     try:
@@ -110,7 +114,7 @@ def ask_database(question: str) -> str:
             logger.exception("Retried SQL execution failed.")
             return (
                 "I generated a SQL query, but it failed when executed. "
-                "Please check the table structure or rephrase the question."
+                "Please check the table structure, database dialect, or rephrase the question."
             )
 
     answer = summarize_result(
@@ -123,8 +127,6 @@ def ask_database(question: str) -> str:
         logger.warning("LLM summary looked invalid. Returning deterministic fallback.")
 
         return build_fallback_answer(
-            question=question,
-            sql_query=sql_query,
             result_df=result_df,
         )
 
@@ -141,7 +143,7 @@ def get_schema_context() -> str:
     """
     Read table and column metadata from information_schema.
 
-    This gives the LLM the real available columns without using the
+    This gives the LLM the real available columns without using an
     autonomous SQL Agent schema tool.
     """
 
@@ -152,7 +154,8 @@ def get_schema_context() -> str:
         SELECT
             table_name,
             column_name,
-            data_type
+            data_type,
+            ordinal_position
         FROM information_schema.columns
         WHERE table_schema = :schema_name
         ORDER BY table_name, ordinal_position;
@@ -169,8 +172,13 @@ def get_schema_context() -> str:
         )
 
     if ALLOWED_TABLES:
+        allowed_tables_lower = {
+            table.lower()
+            for table in ALLOWED_TABLES
+        }
+
         schema_df = schema_df[
-            schema_df["table_name"].isin(ALLOWED_TABLES)
+            schema_df["table_name"].str.lower().isin(allowed_tables_lower)
         ]
 
     if schema_df.empty:
@@ -183,6 +191,8 @@ def get_schema_context() -> str:
     for table_name, table_df in schema_df.groupby("table_name"):
         lines.append(f"Table: {ALLOWED_SCHEMA}.{table_name}")
 
+        table_df = table_df.sort_values("ordinal_position")
+
         for _, row in table_df.iterrows():
             lines.append(
                 f"- {row['column_name']} ({row['data_type']})"
@@ -190,35 +200,99 @@ def get_schema_context() -> str:
 
         lines.append("")
 
-    relationships = get_known_relationships_text()
+    domain_guidance = get_optional_domain_guidance_text()
 
-    return "\n".join(lines).strip() + "\n\n" + relationships
+    return "\n".join(lines).strip() + "\n\n" + domain_guidance
 
 
-def get_known_relationships_text() -> str:
+def get_optional_domain_guidance_text() -> str:
     """
-    Provide known relationships for the hospital analytics dataset.
+    Return optional database-specific guidance from environment variables.
 
-    These relationships help the LLM choose correct joins without needing
-    foreign keys in the database.
+    This keeps the assistant reusable across domains such as:
+    - hospital
+    - retail
+    - banking
+    - logistics
+    - finance
+    - education
+
+    The code stays generic.
+    The .env file provides optional project-specific context.
     """
 
-    return f"""
-Known relationships:
-- {ALLOWED_SCHEMA}.appointments.patient_id = {ALLOWED_SCHEMA}.patients.patient_id
-- {ALLOWED_SCHEMA}.appointments.doctor_id = {ALLOWED_SCHEMA}.doctors.doctor_id
-- {ALLOWED_SCHEMA}.treatments.appointment_id = {ALLOWED_SCHEMA}.appointments.appointment_id
-- {ALLOWED_SCHEMA}.billing.patient_id = {ALLOWED_SCHEMA}.patients.patient_id
-- {ALLOWED_SCHEMA}.billing.treatment_id = {ALLOWED_SCHEMA}.treatments.treatment_id
+    sections = []
 
-Join guidance:
-- Do not join tables unless the question needs columns from more than one table.
-- When counting patients, count from {ALLOWED_SCHEMA}.patients unless another table is explicitly needed.
-- When counting appointments, count from {ALLOWED_SCHEMA}.appointments.
-- When counting doctors, count from {ALLOWED_SCHEMA}.doctors.
-- When calculating billing totals, use {ALLOWED_SCHEMA}.billing.amount.
-- When ranking patients by billing amount, group by patient_id and patient name.
-""".strip()
+    if AI_DB_RELATIONSHIPS:
+        relationships = format_semicolon_list(AI_DB_RELATIONSHIPS)
+
+        sections.append(
+            "Known relationships:\n"
+            f"{relationships}\n\n"
+            "Relationship guidance:\n"
+            "- If relationships use unqualified table names, treat them as tables in the allowed schema.\n"
+            "- Do not invent relationships that are not supported by the schema or the provided guidance."
+        )
+
+    if AI_DB_BUSINESS_RULES:
+        business_rules = format_semicolon_list(AI_DB_BUSINESS_RULES)
+
+        sections.append(
+            "Business rules:\n"
+            f"{business_rules}"
+        )
+
+    if not sections:
+        return (
+            "Optional domain guidance:\n"
+            "- No additional business rules or relationships were provided.\n"
+            "- Use only the available schema and columns to infer safe SQL.\n"
+            "- Do not invent relationships."
+        )
+
+    return "\n\n".join(sections)
+
+
+def format_semicolon_list(value: str) -> str:
+    """
+    Convert a semicolon-separated string into a bullet list.
+    """
+
+    items = [
+        item.strip()
+        for item in value.split(";")
+        if item.strip()
+    ]
+
+    return "\n".join(
+        f"- {item}"
+        for item in items
+    )
+
+
+def get_allowed_tables_text() -> str:
+    """
+    Return a human-readable description of allowed tables.
+    """
+
+    if ALLOWED_TABLES:
+        return ", ".join(
+            f"{ALLOWED_SCHEMA}.{table}"
+            for table in ALLOWED_TABLES
+        )
+
+    return f"All tables in the {ALLOWED_SCHEMA} schema"
+
+
+def get_excluded_schemas_text() -> str:
+    """
+    Return a human-readable description of schemas the assistant should avoid.
+    """
+
+    if not EXCLUDED_SCHEMAS:
+        return "No additional schemas are excluded."
+
+    return ", ".join(EXCLUDED_SCHEMAS)
 
 
 # ============================================================
@@ -286,10 +360,16 @@ Rules:
 - Only use SELECT.
 - Use {AI_DB_DIALECT_NAME} syntax.
 - Always use schema-qualified table names.
-- Only query tables in the {ALLOWED_SCHEMA} schema.
-- Do not query raw, analytics, automation, or information_schema tables.
-- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, CALL, COPY, GRANT, or REVOKE.
+- Only query tables in the allowed schema: {ALLOWED_SCHEMA}.
+- Allowed tables: {get_allowed_tables_text()}.
+- Do not query these schemas: {get_excluded_schemas_text()}.
+- Do not query system, catalog, or metadata tables.
+- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, CALL, COPY, GRANT, REVOKE, DECLARE, BEGIN, COMMIT, or ROLLBACK.
 - Do not return placeholders.
+- When returning entities, include stable identifiers when they are available.
+- When returning descriptive names, include the related stable identifier when it helps avoid merging different records with the same name.
+- Do not assume specific column names exist. Use only columns listed in the schema context.
+- Do not invent relationships. Use explicit relationships from the optional guidance when provided.
 - If the question cannot be answered with the available schema, return exactly: NO_SQL
 """
 
@@ -308,11 +388,6 @@ def build_sql_generation_prompt(
     Build the prompt used to generate SQL.
     """
 
-    allowed_tables_text = ", ".join(
-        f"{ALLOWED_SCHEMA}.{table}"
-        for table in ALLOWED_TABLES
-    )
-
     return f"""
 You are a careful {AI_DB_DIALECT_NAME} SQL generator.
 
@@ -321,14 +396,17 @@ Your task is to create one SQL SELECT query that answers the user's question.
 User question:
 {question}
 
-Available schema and columns:
+Available schema, columns, and optional guidance:
 {schema_context}
 
 Allowed schema:
 {ALLOWED_SCHEMA}
 
 Allowed tables:
-{allowed_tables_text}
+{get_allowed_tables_text()}
+
+Excluded schemas:
+{get_excluded_schemas_text()}
 
 Rules:
 - Return only SQL.
@@ -336,20 +414,19 @@ Rules:
 - Do not explain the query.
 - Only use SELECT.
 - Use {AI_DB_DIALECT_NAME} syntax.
-- Always use schema-qualified table names, for example {ALLOWED_SCHEMA}.patients.
-- Only query tables in the {ALLOWED_SCHEMA} schema.
-- Do not query raw tables.
-- Do not query analytics tables.
-- Do not query automation tables.
-- Do not query information_schema.
-- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, CALL, COPY, GRANT, or REVOKE.
+- Always use schema-qualified table names, for example {ALLOWED_SCHEMA}.table_name.
+- Only query tables in the allowed schema: {ALLOWED_SCHEMA}.
+- Do not query excluded schemas.
+- Do not query system, catalog, or metadata tables.
+- Do not use INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, EXEC, CALL, COPY, GRANT, REVOKE, DECLARE, BEGIN, COMMIT, or ROLLBACK.
 - Do not return placeholders.
 - Use clear column aliases.
-- For top or highest questions, use ORDER BY and LIMIT.
+- For top, highest, bottom, or lowest questions, use ORDER BY and the correct row-limiting syntax for {AI_DB_DIALECT_NAME}.
 - For count, total, sum, average, per, by, highest, lowest, top, or bottom questions, generate a query that returns the actual result.
-- If the question asks for a person, include a readable name when available.
-- If using first_name and last_name, concatenate them with a space.
-- If grouping by patient name, also group by patient_id to avoid merging different patients with the same name.
+- When returning entities, include stable identifiers when they are available.
+- When returning descriptive names, include the related stable identifier when it helps avoid merging different records with the same name.
+- Do not assume specific column names exist. Use only columns listed in the schema context.
+- Do not invent relationships. Use explicit relationships from the optional guidance when provided.
 - If the question cannot be answered with the available schema, return exactly: NO_SQL
 """
 
@@ -436,6 +513,9 @@ Answer the user's question using only the SQL result provided below.
 User question:
 {question}
 
+Database dialect:
+{AI_DB_DIALECT_NAME}
+
 SQL executed:
 {sql_query}
 
@@ -501,6 +581,10 @@ def format_value(value: Any) -> str:
 def answer_looks_invalid(answer: str) -> bool:
     """
     Detect answers that look like model failures.
+
+    Keep this generic.
+    Do not block domain-specific phrases such as patient, customer,
+    account, invoice, balance, order, or payment.
     """
 
     normalized_answer = answer.lower().strip()
@@ -508,11 +592,9 @@ def answer_looks_invalid(answer: str) -> bool:
     invalid_patterns = [
         "```sql",
         "select ",
-        "[",
-        "]",
+        " from ",
+        " where ",
         "placeholder",
-        "patient's full name",
-        "total bill amount",
         "this query",
         "the query would",
         "would return",
@@ -528,8 +610,6 @@ def answer_looks_invalid(answer: str) -> bool:
 
 
 def build_fallback_answer(
-    question: str,
-    sql_query: str,
     result_df: pd.DataFrame,
 ) -> str:
     """
