@@ -299,7 +299,9 @@ SELECT COUNT(*) FROM harmonized.treatments;
 SELECT COUNT(*) FROM harmonized.billing;
 
 -- Run all transformations:
-CALL automation.sp_transform_all();
+--CALL automation.sp_transform_all();
+CALL automation.sp_transform_patients();
+CALL automation.sp_transform_doctors();
 
 -- After running stored procedures
 SELECT COUNT(*) FROM harmonized.patients;
