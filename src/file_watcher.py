@@ -8,10 +8,13 @@ This is an event-driven alternative to scheduler.py.
 """
 
 from pathlib import Path
-import time
 import logging
+import time
 
+# Monitors folders and generates file system events.
 from watchdog.observers import Observer
+
+# Base class used to define how file system events should be handled.
 from watchdog.events import FileSystemEventHandler
 
 from pipeline import run_pipeline
@@ -51,7 +54,7 @@ class NewCSVFileHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         """
-        Runs when a new file or folder is created.
+        Run when a new file or folder is created.
         """
 
         if event.is_directory:
@@ -72,10 +75,10 @@ class NewCSVFileHandler(FileSystemEventHandler):
 
     def on_moved(self, event):
         """
-        Runs when a file is moved into the watched folder.
+        Run when a file is moved into the watched folder.
 
-        This is useful because sometimes Windows detects copy/paste
-        as a move event instead of a create event.
+        This is useful because Windows may detect a copy-and-paste
+        operation as a move event instead of a create event.
         """
 
         if event.is_directory:
@@ -89,13 +92,15 @@ class NewCSVFileHandler(FileSystemEventHandler):
 
         logger.info("CSV file moved into folder: %s", file_path)
 
+        # Give Windows time to finish moving the file.
         time.sleep(2)
 
         self.run_pipeline_safely()
 
     def run_pipeline_safely(self):
         """
-        Run the pipeline safely so the watcher does not stop if the pipeline fails.
+        Run the pipeline safely so the watcher does not stop
+        if the pipeline fails.
         """
 
         if self.is_pipeline_running:
@@ -130,7 +135,9 @@ def start_file_watcher() -> None:
     logger.info("Watching folder: %s", RAW_DATA_DIR)
 
     if not RAW_DATA_DIR.exists():
-        raise FileNotFoundError(f"Raw data folder does not exist: {RAW_DATA_DIR}")
+        raise FileNotFoundError(
+            f"Raw data folder does not exist: {RAW_DATA_DIR}"
+        )
 
     event_handler = NewCSVFileHandler()
     observer = Observer()
@@ -138,7 +145,7 @@ def start_file_watcher() -> None:
     observer.schedule(
         event_handler,
         path=str(RAW_DATA_DIR),
-        recursive=True
+        recursive=True,
     )
 
     observer.start()
