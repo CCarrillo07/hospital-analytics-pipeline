@@ -221,7 +221,7 @@ BEGIN
     SELECT
         treatment_id,
         appointment_id,
-        INITCAP(TRIM(treatment_type)) AS treatment_type,
+        treatment_type,
         description,
         TO_DATE(treatment_date, 'DD/MM/YYYY') AS treatment_date
     FROM raw.treatments
@@ -264,7 +264,7 @@ BEGIN
                 THEN 'Cash'
             ELSE 'Unknown'
         END AS payment_method,
-        INITCAP(TRIM(payment_status)) AS payment_status
+        payment_status
     FROM raw.billing
     WHERE bill_id IS NOT NULL;
 END;
