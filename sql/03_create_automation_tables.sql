@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS automation.ingestion_log (
 -- more than once with status = 'SUCCESS'.
 --
 -- Why only SUCCESS?
--- Because a file may fail first and then be retried later.
+-- A file can fail multiple times, but it can be marked as successfully loaded only once.
 CREATE UNIQUE INDEX IF NOT EXISTS ux_ingestion_log_success_file
 ON automation.ingestion_log (file_path)
 WHERE status = 'SUCCESS';
