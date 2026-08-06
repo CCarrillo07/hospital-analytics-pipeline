@@ -8,15 +8,14 @@ The connection credentials are loaded from the .env file located at the
 root of the project.
 """
 
-from pathlib import Path
-import os
-import logging
+import logging  # Displays informational and error messages in the terminal.
+from pathlib import Path  # Helps create and manage file and folder paths.
+from dotenv import load_dotenv  # Loads environment variables from the .env file.
+import os  # Reads environment variables from the operating system.
 
-from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
-from sqlalchemy.exc import SQLAlchemyError
-
+from sqlalchemy.engine import Engine, URL  # Provides the Engine type and builds the database URL.
+from sqlalchemy import create_engine  # Creates the connection engine for PostgreSQL.
+from sqlalchemy.exc import SQLAlchemyError  # Handles errors produced by SQLAlchemy.
 
 # ============================================================
 # Logging configuration
@@ -100,7 +99,7 @@ def validate_database_variables() -> None:
     logger.info("Database environment variables validated successfully.")
 
 
-def get_database_url() -> str:
+def get_database_url() -> URL:
     """
     Build and return the PostgreSQL SQLAlchemy connection URL.
 
@@ -180,4 +179,6 @@ if __name__ == "__main__":
         logger.exception("Database connection test failed.")
 
     except Exception:
-        logger.exception("Unexpected error occurred while testing the database connection.")
+        logger.exception(
+            "Unexpected error occurred while testing the database connection."
+        )
