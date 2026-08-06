@@ -5,8 +5,7 @@ from pathlib import Path
 # datetime is used to register when files were loaded or processed.
 from datetime import datetime
 
-# logging is used instead of print for pipeline logs.
-# In this version, logs are only displayed in the terminal.
+# Displays informational and error messages in the terminal.
 import logging
 
 # pandas is used to read CSV files and load them into PostgreSQL.
