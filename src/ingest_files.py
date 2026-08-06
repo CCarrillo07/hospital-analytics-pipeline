@@ -6,7 +6,6 @@ from pathlib import Path
 from datetime import datetime
 
 # logging is used instead of print for pipeline logs.
-# In this version, logs are only displayed in the terminal.
 import logging
 
 # pandas is used to read CSV files and load them into PostgreSQL.
@@ -116,12 +115,22 @@ SOURCES = {
 # ============================================================
 
 def get_relative_path(file_path: Path) -> str:
-    """
-    Return the file path relative to the project root.
+   
+    r"""
+    Return the file path relative to BASE_DIR, which is the project root.
 
-    This is better than storing the full absolute path because the project
-    may be moved to another computer or folder.
+    Example:
+    BASE_DIR = C:\Users\crist\Documents\hospital_analytics_project
+
+    The function converts:
+    C:\Users\crist\Documents\hospital_analytics_project\data\raw\patients\patients.csv
+
+    into:
+    data\raw\patients\patients.csv
+
+    This avoids storing a full path that only works on one computer.
     """
+
     return str(file_path.relative_to(BASE_DIR))
 
 
@@ -310,7 +319,7 @@ def load_csv_to_raw_table(
         con=engine,
         schema=schema_name,
         if_exists="append",
-        index=False
+        index=False # Do not insert the DataFrame row numbers into the database.
     )
 
     # Return the number of rows inserted.
