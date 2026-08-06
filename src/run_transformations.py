@@ -5,7 +5,7 @@ This file calls the stored procedures that transform data from the raw schema
 into the harmonized schema.
 """
 
-# logging is used instead of print for pipeline logs.
+# Displays informational and error messages in the terminal.
 import logging
 
 # text is used to safely execute SQL queries with parameters.
