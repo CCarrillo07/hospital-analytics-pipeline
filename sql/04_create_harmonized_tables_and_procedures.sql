@@ -294,9 +294,6 @@ $$;
 -- Before running stored procedures
 SELECT COUNT(*) FROM harmonized.patients;
 SELECT COUNT(*) FROM harmonized.doctors;
-SELECT COUNT(*) FROM harmonized.appointments;
-SELECT COUNT(*) FROM harmonized.treatments;
-SELECT COUNT(*) FROM harmonized.billing;
 
 -- Run all transformations:
 --CALL automation.sp_transform_all();
@@ -306,6 +303,3 @@ CALL automation.sp_transform_doctors();
 -- After running stored procedures
 SELECT COUNT(*) FROM harmonized.patients;
 SELECT COUNT(*) FROM harmonized.doctors;
-SELECT COUNT(*) FROM harmonized.appointments;
-SELECT COUNT(*) FROM harmonized.treatments;
-SELECT COUNT(*) FROM harmonized.billing;
