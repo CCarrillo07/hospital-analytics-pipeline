@@ -61,7 +61,8 @@ WHERE status = 'SUCCESS';
 
 -- This constraint ensures only expected status values are inserted.
 -- PostgreSQL does not support "IF NOT EXISTS" for CHECK constraints
--- in the same simple way as tables/indexes, so this block checks first.
+-- like it does with CREATE TABLE IF NOT EXISTS or CREATE INDEX IF NOT EXISTS,
+-- so this block first checks whether the constraint already exists.
 DO $$
 BEGIN
     IF NOT EXISTS (
