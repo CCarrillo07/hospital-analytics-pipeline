@@ -115,11 +115,19 @@ SOURCES = {
 # ============================================================
 
 def get_relative_path(file_path: Path) -> str:
-    """
-    Return the file path relative to the project root.
+    r"""
+    Return the file path relative to BASE_DIR, which is the project root.
 
-    This is better than storing the full absolute path because the project
-    may be moved to another computer or folder.
+    Example:
+    BASE_DIR = C:\Users\crist\Documents\hospital_analytics_project
+
+    The function converts:
+    C:\Users\crist\Documents\hospital_analytics_project\data\raw\patients\patients.csv
+
+    into:
+    data\raw\patients\patients.csv
+
+    This avoids storing a full path that only works on one computer.
     """
     return str(file_path.relative_to(BASE_DIR))
 
