@@ -40,8 +40,8 @@ CREATE TABLE harmonized.doctors (
 -- ============================================================
 
 CREATE TABLE harmonized.appointments (
-    appointment_id     VARCHAR(10),
-    patient_id         VARCHAR(10),
+    appointment_id     VARCHAR(50),
+    patient_id         VARCHAR(50),
     doctor_id          VARCHAR(10),
     appointment_date   DATE,
     appointment_time   TIME,
@@ -71,7 +71,7 @@ CREATE TABLE harmonized.treatments (
 
 CREATE TABLE harmonized.billing (
     bill_id            VARCHAR(10),
-    patient_id         VARCHAR(10),
+    patient_id         VARCHAR(50),
     treatment_id       VARCHAR(10),
     bill_date          DATE,
     amount             NUMERIC(10,2),
@@ -80,6 +80,59 @@ CREATE TABLE harmonized.billing (
     source_file        TEXT,
     transformed_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================
+-- Primary keys
+-- ============================================================
+
+ALTER TABLE harmonized.patients
+ADD CONSTRAINT pk_patients
+PRIMARY KEY (patient_id);
+
+ALTER TABLE harmonized.doctors
+ADD CONSTRAINT pk_doctors
+PRIMARY KEY (doctor_id);
+
+ALTER TABLE harmonized.appointments
+ADD CONSTRAINT pk_appointments
+PRIMARY KEY (appointment_id);
+
+ALTER TABLE harmonized.treatments
+ADD CONSTRAINT pk_treatments
+PRIMARY KEY (treatment_id);
+
+ALTER TABLE harmonized.billing
+ADD CONSTRAINT pk_billing
+PRIMARY KEY (bill_id);
+
+-- ============================================================
+-- Foreign  keys
+-- ============================================================
+
+ALTER TABLE harmonized.appointments
+ADD CONSTRAINT fk_appointments_patient
+FOREIGN KEY (patient_id)
+REFERENCES harmonized.patients(patient_id);
+
+ALTER TABLE harmonized.appointments
+ADD CONSTRAINT fk_appointments_doctor
+FOREIGN KEY (doctor_id)
+REFERENCES harmonized.doctors(doctor_id);
+
+ALTER TABLE harmonized.treatments
+ADD CONSTRAINT fk_treatments_appointment
+FOREIGN KEY (appointment_id)
+REFERENCES harmonized.appointments(appointment_id);
+
+ALTER TABLE harmonized.billing
+ADD CONSTRAINT fk_billing_patient
+FOREIGN KEY (patient_id)
+REFERENCES harmonized.patients(patient_id);
+
+ALTER TABLE harmonized.billing
+ADD CONSTRAINT fk_billing_treatment
+FOREIGN KEY (treatment_id)
+REFERENCES harmonized.treatments(treatment_id);
 
 -- ============================================================
 -- Transformation procedure: Patients
@@ -299,7 +352,9 @@ SELECT COUNT(*) FROM harmonized.treatments;
 SELECT COUNT(*) FROM harmonized.billing;
 
 -- Run all transformations:
-CALL automation.sp_transform_all();
+--CALL automation.sp_transform_all();
+CALL automation.sp_transform_patients();
+CALL automation.sp_transform_doctors();
 
 -- After running stored procedures
 SELECT COUNT(*) FROM harmonized.patients;
