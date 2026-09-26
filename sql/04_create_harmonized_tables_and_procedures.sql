@@ -41,7 +41,7 @@ CREATE TABLE harmonized.doctors (
 
 CREATE TABLE harmonized.appointments (
     appointment_id     VARCHAR(50),
-    patient_id         VARCHAR(10),
+    patient_id         VARCHAR(50),
     doctor_id          VARCHAR(10),
     appointment_date   DATE,
     appointment_time   TIME,
@@ -80,12 +80,6 @@ CREATE TABLE harmonized.billing (
     source_file        TEXT,
     transformed_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE harmonized.appointments
-ALTER COLUMN patient_id TYPE VARCHAR(50);
-
-ALTER TABLE harmonized.billing
-ALTER COLUMN patient_id TYPE VARCHAR(50);
 
 -- ============================================================
 -- Primary keys
